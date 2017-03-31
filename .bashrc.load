@@ -1,0 +1,180 @@
+
+# If not running interactively, don't do anything
+[ -z "$PS1" ] && return
+
+export TERM=xterm-256color
+
+# don't put duplicate lines in the history. See bash(1) for more options
+export HISTCONTROL=ignoredups
+# ... and ignore same sucessive entries.
+export HISTCONTROL=ignoreboth
+
+# check the window size after each command and, if necessary,
+# update the values of LINES and COLUMNS.
+shopt -s checkwinsize
+
+# make less more friendly for non-text input files, see lesspipe(1)
+[ -x /usr/bin/lesspipe ] && eval "$(SHELL=/bin/sh lesspipe)"
+
+# Color prompt
+source ~/bin/color-names.sh
+source ~/bin/git-prompt.sh
+export PS1="\[$IPurple\]\$(__git_ps1) \[$Green\][\w]\[\033[0m\]\n\[$Green\][$USER@$HOSTNAME]$ \[$White\]"
+
+# Function definitions.
+
+SSH_ENV="$HOME/.ssh/environment"
+
+# start the ssh-agent
+function start_agent {
+    echo "Initializing new SSH agent..."
+    # spawn ssh-agent
+    ssh-agent | sed 's/^echo/#echo/' > "$SSH_ENV"
+    echo succeeded
+    chmod 600 "$SSH_ENV"
+    . "$SSH_ENV" > /dev/null
+    ssh-add
+}
+
+# test for identities
+function test_identities {
+    # test whether standard identities have been added to the agent already
+    ssh-add -l | grep "The agent has no identities" > /dev/null
+    if [ $? -eq 0 ]; then
+        ssh-add
+        # $SSH_AUTH_SOCK broken so we start a new proper agent
+        if [ $? -eq 2 ];then
+            start_agent
+        fi
+    fi
+}
+
+function start_ssh_agent_if_necessary {
+   # check for running ssh-agent with proper $SSH_AGENT_PID
+   if [ -n "$SSH_AGENT_PID" ]; then
+       ps -ef | grep "$SSH_AGENT_PID" | grep ssh-agent > /dev/null
+       if [ $? -eq 0 ]; then
+           test_identities
+       fi
+   # if $SSH_AGENT_PID is not properly set, we might be able to load one from
+   # $SSH_ENV
+   else
+       if [ -f "$SSH_ENV" ]; then
+           . "$SSH_ENV" > /dev/null
+       fi
+       ps -ef | grep "$SSH_AGENT_PID" | grep -v grep | grep ssh-agent > /dev/null
+       if [ $? -eq 0 ]; then
+           test_identities
+       else
+           start_agent
+       fi
+   fi
+}
+
+f_pushd() 
+{
+    pushd $1 > /dev/null
+    dirs -v
+}
+
+function f_popd() 
+{
+    popd $1 > /dev/null
+    dirs -v
+}
+
+    
+function title {
+    if [ "$1" ]
+    then
+        unset PROMPT_COMMAND
+        echo -ne "\033]0;${*}\007"
+    else
+        export PROMPT_COMMAND='echo -ne "\033]0;${PWD##*/}\007"'
+    fi
+}
+
+shopt -s nocaseglob
+alias ls='ls -hFA'
+alias ll='ls -hlA'
+alias vi=vim
+alias td='cd $OLDPWD'
+alias dirs='dirs -v'
+alias pd=f_pushd
+alias pop=f_popd
+alias popd=f_popd
+alias 0="pd"
+alias 1="pd +1"
+alias 2="pd +2"
+alias 3="pd +3"
+alias 4="pd +4"
+alias 5="pd +5"
+alias 6="pd +6"
+alias 7="pd +7"
+alias 8="pd +8"
+alias 9="pd +9"
+alias hgr='history | grep'
+alias pyclean="find . -type f -iname '*.pyc' -delete"
+
+export EDITOR='vim'
+
+# Python Virtual Environments
+# Setting up the VirtualEnv
+export WORKON_HOME=$HOME/.virtualenvs
+export PIP_VIRTUALENV_BASE=$WORKON_HOME
+export PIP_RESPECT_VIRTUALENV=true
+export VIRTUALENVWRAPPER_PYTHON=/usr/local/bin/python
+export VIRTUALENVWRAPPER_VIRTUALENV=/usr/local/bin/virtualenv
+
+BREW_VIRTUALENVWRAPPER=/usr/local/bin/virtualenvwrapper.sh
+LINUX_VIRTUALENVWRAPPER=/usr/local/bin/virtualenvwrapper.sh
+
+# iterm window title
+export PROMPT_COMMAND='echo -ne "\033]0;${PWD##*/}\007"'
+
+# Detect the platform (similar to $OSTYPE)
+OS="`uname`"
+case $OS in
+  'Linux')
+    export OS='Linux'
+    export VIRTUALENVWRAPPER_PYTHON=/usr/bin/python
+    source $LINUX_VIRTUALENVWRAPPER
+    alias ls='ls -hFA --color=auto'
+    alias ll='ls -hlA --color=auto'
+    start_ssh_agent_if_necessary
+    # all completion
+    source /etc/bash_completion
+    ;;
+  'Darwin') 
+    export OS='Mac'
+    export VIRTUALENVWRAPPER_PYTHON=/usr/local/bin/python2.7
+    source $BREW_VIRTUALENVWRAPPER
+    alias ls='ls -GFA'
+    alias ll='ls -GlA '
+    source /usr/local/etc/bash_completion
+#    for file in /usr/local/etc/bash_completion.d/* ; do
+#        source "$file"
+#    done
+    ;;
+esac
+
+# bash bookmarks
+source ~/bin/bashmarks.sh
+
+
+# completion
+if [ -e /etc/bash_completion.d/docker.io ]; then
+    source /etc/bash_completion.d/docker.io
+fi
+source $HOME/.git-completion.bash
+
+export PATH=$HOME/localbin:$HOME/bin:/opt/local/bin:/usr/local/sbin:/usr/local/bin:/usr/local/share/python:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:$EC2_BASE/bin
+
+# pyenv
+eval "$(pyenv init -)"
+
+#  local stuff - done here so path can be extended
+if [ -e "$HOME/.bashrc.local" ]; then
+        source "$HOME/.bashrc.local"
+fi
+
