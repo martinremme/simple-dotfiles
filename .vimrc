@@ -21,43 +21,41 @@ else
 endif
 
 if $TERM == "xterm-256color"
-          set t_Co=256
+    set t_Co=256
 endif
 
 " for files encrypted using ccrypt(1)
 augroup CPT
-  au!
-  " decrypt before reading
-  au BufReadPre *.cpt       set bin viminfo= noswapfile
-  " decrypted; prepare for editing
-  au BufReadPost *.cpt      let $VIMPASS = inputsecret("Password: ")
-  au BufReadPost *.cpt      %!ccrypt -cb -E VIMPASS
-  au BufReadPost *.cpt      set nobin
+    au!
+    " decrypt before reading
+    au BufReadPre *.cpt       set bin viminfo= noswapfile
+    " decrypted; prepare for editing
+    au BufReadPost *.cpt      let $VIMPASS = inputsecret("Password: ")
+    au BufReadPost *.cpt      %!ccrypt -cb -E VIMPASS
+    au BufReadPost *.cpt      set nobin
 
-  " encrypt
-  au BufWritePre *.cpt      set bin
-  au BufWritePre *.cpt      %!ccrypt -e -E VIMPASS
-  " encrypted; prepare for continuing to edit the file
-  au BufWritePost *.cpt     silent undo | set nobin
+    " encrypt
+    au BufWritePre *.cpt      set bin
+    au BufWritePre *.cpt      %!ccrypt -e -E VIMPASS
+    " encrypted; prepare for continuing to edit the file
+    au BufWritePost *.cpt     silent undo | set nobin
 augroup END
 
 set nocompatible              " be iMproved, required
 filetype off                  " required
 
 " set the runtime path to include Vundle and initialize
-set rtp+=~/.vim/bundle/Vundle.vim
-call vundle#begin()
+"set rtp+=~/.vim/bundle/Vundle.vim
+"call vundle#begin()
 
 " let Vundle manage Vundle, required
-Plugin 'gmarik/Vundle.vim'
-Plugin 'tpope/vim-fugitive'
-Plugin 'scrooloose/nerdtree'
-Plugin 'jmcantrell/vim-virtualenv'
-Plugin 'hylang/vim-hy'
+"Plugin 'gmarik/Vundle.vim'
+"Plugin 'tpope/vim-fugitive'
+"Plugin 'scrooloose/nerdtree'
 
 " more Plugin commands
 " ...
-call vundle#end()            " required
+"call vundle#end()            " required
 filetype plugin indent on    " required
 
 " NERDTree key
